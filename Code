@@ -1,0 +1,64 @@
+# FLASK_API-
+A small API developed in Python using Flask to deploy a classification ML model
+
+import pickle
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_iris
+
+iris_dataset = load_iris()
+
+X_train, X_test, y_train, y_test = train_test_split(iris_dataset['data'],
+                                                   iris_dataset['target'],
+                                                   random_state=0)
+classifier = KNeighborsClassifier()
+classifier.fit(X_train, y_train)
+
+filename = 'model.pkl'
+outfile = open(filename, 'wb')
+pickle.dump(classifier, outfile)
+
+print(X_test[0].shape)
+
+
+##==================================flask api setup
+
+
+from flask import Flask, request, jsonify
+import pickle
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+
+def predict_result(num1, num2, num3, num4):
+    
+   output = {'Flower Type':0}
+    x_input = np.array([num1, num2, num3, num4]).reshape(1,-1)
+    filename = 'model.pkl'
+    m1 = pickle.load(open(filename, 'rb'))
+    p = m1.predict(x_input)[0]
+    p = int(p)
+    output['Flower Type']=p
+    return output
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return 'Hello User !'
+
+@app.route("/predict", methods = ['GET'])
+def prediction():
+    body = request.get_data()
+    header = request.headers 
+    
+    num1 = float(request.args['x1'])
+    num2 = float(request.args['x2'])
+    num3 = float(request.args['x3'])
+    num4 = float(request.args['x4'])
+    
+    result = predict_result(num1,num2,num3,num4)
+    
+    return jsonify(result)
+
+if __name__ == '__main__':
+    app.run(debug = True)
